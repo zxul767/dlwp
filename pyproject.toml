@@ -1,0 +1,25 @@
+[project]
+name = "dlwp"
+version = "0.0.1"
+dependencies = [
+    "matplotlib>=3.11.2",
+]
+
+[tool.basedpyright]
+reportUnknownVariableType = false
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportMissingModuleSource = false
+reportExplicitAny = false
+reportAny = false
+reportImplicitOverride = false
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+line-length = 88
+
+[dependency-groups]
+dev = [
+    "types-tensorflow>=2.18.0.20260827",
+]
