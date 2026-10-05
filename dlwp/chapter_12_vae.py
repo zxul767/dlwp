@@ -190,7 +190,7 @@ def plot_latent_mnist_digit(
     vae: KerasModel, n_latent_dims: int = DEFAULT_N_LATENT_DIMS
 ) -> None:
     """
-    Plots a single latent MNIST digit (i.e., an image from the discovered manifold)
+    Plots a single latent MNIST digit (i.e., a digit image from the VAE's latent space)
     """
     # sample a latent image
     z_sample = tf.random.normal(shape=(1, n_latent_dims), stddev=2.0)
@@ -210,7 +210,7 @@ def plot_latent_mnist_digit(
 
 def plot_latent_mnist_grid(vae: KerasModel, grid_size: int = 30) -> None:
     """
-    Plots a grid of latent MNIST digits (i.e., images from the discovered manifold).
+    Plots a grid of latent MNIST digits (i.e., digit images from the VAE's latent space).
 
     Assumes that `n_latent_dims == 2` because otherwise the visualization would become
     more complicated.
