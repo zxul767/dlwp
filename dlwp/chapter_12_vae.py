@@ -19,7 +19,6 @@ else:
 
 MNIST_DIGIT_SIZE = 28  # each image is 28x28 pixels
 DEFAULT_COLOR_MAP = "Grays_r"
-DEFAULT_N_LATENT_DIMS = 2
 
 
 def prepare_unlabeled_mnist() -> npt.NDArray[np.float32]:
@@ -37,7 +36,7 @@ def prepare_unlabeled_mnist() -> npt.NDArray[np.float32]:
 
 
 def build_encoder(
-    image_size: tuple[int, int, int], n_latent_dims: int = DEFAULT_N_LATENT_DIMS
+    *, image_size: tuple[int, int, int], n_latent_dims: int
 ) -> tuple[KerasModel, EncoderShape]:
     """
     Returns a VAE encoder and the final feature map shape (to be able to create
@@ -58,7 +57,7 @@ def build_encoder(
     shape = tuple(x.shape)
     # 1) we need this in order to build the corresponding decoder
     # 2) discard the batch dimension (it is always `None`: its value is known until runtime)
-    final_feature_map_shape: EncoderShape = (shape[1], shape[2], shape[3])
+    last_feature_map_shape: EncoderShape = (shape[1], shape[2], shape[3])
 
     x = layers.Flatten()(x)
 
@@ -75,19 +74,19 @@ def build_encoder(
 
     return (
         keras.Model(encoder_inputs, [z_mean, z_log_var], name="encoder"),
-        final_feature_map_shape,
+        last_feature_map_shape,
     )
 
 
 def build_decoder(
-    final_feature_map_shape: EncoderShape, n_latent_dims: int = DEFAULT_N_LATENT_DIMS
+    *, last_feature_map_shape: EncoderShape, n_latent_dims: int
 ) -> KerasModel:
     """
     Returns a VAE decoder.
 
     The VAE decoder takes a latent vector and produces a single-channel image.
     """
-    height, width, channels = final_feature_map_shape
+    height, width, channels = last_feature_map_shape
     if height is None or width is None or channels is None:
         raise ValueError("Encoder shape must have known spatial dimensions")
 
@@ -113,10 +112,10 @@ def build_decoder(
         1, kernel_size=3, activation="sigmoid", padding="same"
     )(x)
 
-    return keras.Model(latent_inputs, decoder_outputs, name="encoder")
+    return keras.Model(latent_inputs, decoder_outputs, name="decoder")
 
 
-class Sampler(KerasLayer):
+class VAESampler(KerasLayer):
     """
     Implements the VAE’s reparameterization trick: it samples a latent vector z
     from (mu, logvar), while keeping the operation differentiable.
@@ -138,7 +137,7 @@ class VAE(KerasModel):
         super().__init__(**kwargs)
         self.encoder: KerasModel = encoder
         self.decoder: KerasModel = decoder
-        self.sampler: Sampler = Sampler()
+        self.sampler: VAESampler = VAESampler()
         self.total_loss_tracker: keras.metrics.Mean = keras.metrics.Mean(
             name="total_loss"
         )
@@ -173,10 +172,8 @@ class VAE(KerasModel):
                 )
             )
             #    add the regularization term (Kullback-Leibler divergence)
-            kl_loss = tf.reduce_sum(
-                -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
-            )
-            total_loss = reconstruction_loss + kl_loss
+            kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
+            total_loss = reconstruction_loss + tf.reduce_mean(kl_loss)
 
             # 5) we update the weights using the gradient and do some bookkeeping to
             # track the losses of interest
@@ -196,9 +193,7 @@ class VAE(KerasModel):
             }
 
 
-def plot_latent_mnist_digit(
-    vae: KerasModel, n_latent_dims: int = DEFAULT_N_LATENT_DIMS
-) -> None:
+def plot_latent_mnist_digit(vae: KerasModel, n_latent_dims: int) -> None:
     """
     Plots a single latent MNIST digit (i.e., a digit image from the VAE's latent space)
     """
