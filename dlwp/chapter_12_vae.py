@@ -1,9 +1,11 @@
+from itertools import product
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
 import tensorflow as tf
+import tqdm
 from tensorflow import keras
 from tensorflow.keras import layers
 
@@ -229,17 +231,18 @@ def plot_latent_mnist_grid(vae: KerasModel, grid_size: int = 30) -> None:
     # sample points linearly on an 2d grid
     grid_x = np.linspace(-1, 1, grid_size)
     grid_y = np.linspace(-1, 1, grid_size)[::-1]
-    for i, yi in enumerate(grid_y):
-        for j, xj in enumerate(grid_x):
-            z_sample = np.array([[xj, yi]])
-            x_decoded = vae.decoder.predict(z_sample, verbose=0)
-            # the decoder always returns a tensor with a batch dimension (of size 1 here)
-            # x_decoded.shape == (1, 28, 28, 1)
-            digit = x_decoded[0].reshape(digit_size, digit_size)
-            figure[
-                i * digit_size : (i + 1) * digit_size,
-                j * digit_size : (j + 1) * digit_size,
-            ] = digit
+    for (i, yi), (j, xj) in tqdm.tqdm(
+        product(enumerate(grid_y), enumerate(grid_x)), total=grid_size * grid_size
+    ):
+        z_sample = np.array([[xj, yi]])
+        x_decoded = vae.decoder.predict(z_sample, verbose=0)
+        # the decoder always returns a tensor with a batch dimension (of size 1 here)
+        # x_decoded.shape == (1, 28, 28, 1)
+        digit = x_decoded[0].reshape(digit_size, digit_size)
+        figure[
+            i * digit_size : (i + 1) * digit_size,
+            j * digit_size : (j + 1) * digit_size,
+        ] = digit
 
     _ = plt.figure(figsize=(15, 15))
 

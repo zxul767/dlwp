@@ -1,5 +1,7 @@
+UV ?= uv
 RUFF ?= ruff
 BASEDPYRIGHT ?= basedpyright
+UV_RUN = $(UV) run --
 
 .PHONY: format format-check lint typecheck check
 
@@ -7,15 +9,15 @@ BASEDPYRIGHT ?= basedpyright
 check: format-check lint typecheck
 
 format:
-	$(RUFF) format .
+	$(UV_RUN) $(RUFF) format .
 
 format-check:
-	$(RUFF) format --check .
+	$(UV_RUN) $(RUFF) format --check .
 
 lint:
-	$(RUFF) check .
+	$(UV_RUN) $(RUFF) check .
 
 typecheck:
-	$(BASEDPYRIGHT) .
+	$(UV_RUN) $(BASEDPYRIGHT) .
 
 check: format-check lint typecheck
