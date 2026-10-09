@@ -89,16 +89,24 @@ def build_decoder(
     if height is None or width is None or channels is None:
         raise ValueError("Encoder shape must have known spatial dimensions")
 
+    # ----------------------------------------------------------------------------------
+    # Final Feature Map Recovery
+    # ----------------------------------------------------------------------------------
     n_units = height * width * channels
     latent_inputs = keras.Input(shape=(n_latent_dims,))
     x = layers.Dense(n_units, activation="relu")(latent_inputs)
     x = layers.Reshape((height, width, channels))(x)
+    # ----------------------------------------------------------------------------------
+    # Upsampling to Recover Original Image
+    # (replicate the two convolutional layers in the encoder)
+    # ----------------------------------------------------------------------------------
     x = layers.Conv2DTranspose(
         channels, kernel_size=3, activation="relu", strides=2, padding="same"
     )(x)
     x = layers.Conv2DTranspose(
         channels // 2, kernel_size=3, activation="relu", strides=2, padding="same"
     )(x)
+    # recover a single-channel image
     decoder_outputs = layers.Conv2D(
         1, kernel_size=3, activation="sigmoid", padding="same"
     )(x)
@@ -194,7 +202,7 @@ def plot_latent_mnist_digit(
     """
     # sample a latent image
     z_sample = tf.random.normal(shape=(1, n_latent_dims), stddev=2.0)
-    reconstructed_image = vae.decoder.predict(z_sample)
+    reconstructed_image = vae.decoder.predict(z_sample, verbose=0)
 
     # Reshape the image for display
     digit_size = MNIST_DIGIT_SIZE
@@ -224,7 +232,7 @@ def plot_latent_mnist_grid(vae: KerasModel, grid_size: int = 30) -> None:
     for i, yi in enumerate(grid_y):
         for j, xj in enumerate(grid_x):
             z_sample = np.array([[xj, yi]])
-            x_decoded = vae.decoder.predict(z_sample)
+            x_decoded = vae.decoder.predict(z_sample, verbose=0)
             # the decoder always returns a tensor with a batch dimension (of size 1 here)
             # x_decoded.shape == (1, 28, 28, 1)
             digit = x_decoded[0].reshape(digit_size, digit_size)
