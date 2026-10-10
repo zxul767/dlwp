@@ -45,6 +45,9 @@ def build_encoder(
     The VAE encoder takes an input image and outputs the parameters for a normal
     distribution (mu, logvar), which we will use to sample latent vectors.
     """
+    if image_size[0] % 4 != 0 or image_size[1] % 4 != 0:
+        raise ValueError("Image height and width must be divisible by 4")
+
     # ----------------------------------------------------------------------------------
     # Image features extraction
     # ----------------------------------------------------------------------------------
