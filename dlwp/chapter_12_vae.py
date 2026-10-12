@@ -15,7 +15,7 @@ import tqdm
 from tensorflow import keras
 from tensorflow.keras import layers
 
-EncoderShape: TypeAlias = tuple[int | None, int | None, int | None]
+LayerShape: TypeAlias = tuple[int | None, int | None, int | None]
 if TYPE_CHECKING:
     KerasModel: TypeAlias = keras.Model[Any, Any]
     KerasLayer: TypeAlias = layers.Layer[tuple[tf.Tensor, tf.Tensor], tf.Tensor]
@@ -43,7 +43,7 @@ def prepare_unlabeled_mnist() -> npt.NDArray[np.float32]:
 
 def build_encoder(
     *, image_size: tuple[int, int, int], n_latent_dims: int
-) -> tuple[KerasModel, EncoderShape]:
+) -> tuple[KerasModel, LayerShape]:
     """
     Returns a VAE encoder and the final feature map shape (to be able to create
     the corresponding VAE decoder).
@@ -59,14 +59,15 @@ def build_encoder(
     # ----------------------------------------------------------------------------------
     encoder_inputs = keras.Input(shape=image_size)
     # `strides=2` downsamples feature maps to half the input size
-    x = layers.Conv2D(32, 3, activation="relu", strides=2, padding="same")(
+    channels = 32
+    x = layers.Conv2D(channels, 3, activation="relu", strides=2, padding="same")(
         encoder_inputs
     )
-    x = layers.Conv2D(64, 3, activation="relu", strides=2, padding="same")(x)
+    x = layers.Conv2D(2 * channels, 3, activation="relu", strides=2, padding="same")(x)
     shape = tuple(x.shape)
     # 1) we need this in order to build the corresponding decoder
     # 2) discard the batch dimension (it is always `None`: its value is known until runtime)
-    last_feature_map_shape: EncoderShape = (shape[1], shape[2], shape[3])
+    last_feature_map_shape: LayerShape = (shape[1], shape[2], shape[3])
 
     x = layers.Flatten()(x)
 
@@ -88,7 +89,7 @@ def build_encoder(
 
 
 def build_decoder(
-    *, last_feature_map_shape: EncoderShape, n_latent_dims: int
+    *, last_feature_map_shape: LayerShape, n_latent_dims: int
 ) -> KerasModel:
     """
     Returns a VAE decoder.
