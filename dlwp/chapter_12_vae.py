@@ -1,3 +1,9 @@
+"""
+Deep Learning with Python, 2nd Edition
+Chapter 12 - Variational AutoEncoders
+https://colab.research.google.com/drive/1gqtOTP0-svOkuKOVSVN_W0T2nfX7U6f5?usp=sharing
+"""
+
 from itertools import product
 from typing import TYPE_CHECKING, Any, TypeAlias
 
