@@ -216,7 +216,12 @@ def plot_latent_mnist_digit(vae: KerasModel, n_latent_dims: int) -> None:
     plt.show()
 
 
-def plot_latent_mnist_grid(vae: KerasModel, grid_size: int = 30) -> None:
+def plot_latent_mnist_grid(
+    vae: KerasModel,
+    grid_size: int = 30,
+    x_range: tuple[float, float] = (-1, 1),
+    y_range: tuple[float, float] = (-1, 1),
+) -> None:
     """
     Plots a grid of latent MNIST digits (i.e., digit images from the VAE's latent space).
 
@@ -227,8 +232,8 @@ def plot_latent_mnist_grid(vae: KerasModel, grid_size: int = 30) -> None:
     figure = np.zeros((digit_size * grid_size, digit_size * grid_size))
 
     # sample points linearly on an 2d grid
-    grid_x = np.linspace(-1, 1, grid_size)
-    grid_y = np.linspace(-1, 1, grid_size)[::-1]
+    grid_x = np.linspace(x_range[0], x_range[1], grid_size)
+    grid_y = np.linspace(y_range[0], y_range[1], grid_size)[::-1]
     for (i, yi), (j, xj) in tqdm.tqdm(
         product(enumerate(grid_y), enumerate(grid_x)), total=grid_size * grid_size
     ):
