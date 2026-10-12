@@ -1,9 +1,12 @@
 from collections.abc import Callable, Mapping
 from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
+from .iterext import nth
 
 if TYPE_CHECKING:
     from tensorflow._aliases import TensorCompatible
@@ -18,7 +21,7 @@ DEFAULT_N_LATENT_DIMS = 128
 
 
 def prepare_gan_dataset(
-    input_image_size: tuple[int, int], *, batch_size: int = DEFAULT_BATCH_SIZE
+    *, input_image_size: tuple[int, int], batch_size: int = DEFAULT_BATCH_SIZE
 ) -> tf.data.Dataset[tf.Tensor]:
     dataset = keras.utils.image_dataset_from_directory(
         "celeba_gan",
@@ -31,6 +34,14 @@ def prepare_gan_dataset(
     # normalize each image tensor to [0, 1] range
     dataset = dataset.map(normalize_image)
     return dataset
+
+
+def plot_nth_image(dataset: tf.data.Dataset[tf.Tensor], n: int) -> None:
+    x = nth(dataset, n)
+    if not x:
+        raise KeyError(f"the dataset has no {n}-th value!")
+    _ = plt.axis("off")
+    _ = plt.imshow((x.numpy() * 255).astype("int32")[0])
 
 
 def normalize_image(image: tf.Tensor) -> tf.Tensor:
