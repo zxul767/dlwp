@@ -38,8 +38,9 @@ def prepare_gan_dataset(
 
 def plot_nth_image(dataset: tf.data.Dataset[tf.Tensor], n: int) -> None:
     x = nth(dataset, n)
-    if not x:
+    if x is None:
         raise KeyError(f"the dataset has no {n}-th value!")
+
     _ = plt.axis("off")
     _ = plt.imshow((x.numpy() * 255).astype("int32")[0])
 
