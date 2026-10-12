@@ -51,6 +51,7 @@ def normalize_image(image: tf.Tensor) -> tf.Tensor:
 
 
 def make_discriminator_model(
+    *,
     input_image_size: tuple[int, int],
 ) -> KerasModel:
     return keras.Sequential(
@@ -77,7 +78,7 @@ def make_discriminator_model(
 
 
 def make_generator_model(
-    input_image_size: tuple[int, int], n_latent_dims: int = DEFAULT_N_LATENT_DIMS
+    *, input_image_size: tuple[int, int], n_latent_dims: int = DEFAULT_N_LATENT_DIMS
 ) -> KerasModel:
     # each convolutional layers reduces the size in half, and there are 3 such layers
     # in the discriminator
