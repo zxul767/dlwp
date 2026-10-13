@@ -165,28 +165,29 @@ class VAE(KerasModel):
         ]
 
     def train_step(self, data: Any) -> dict[str, tf.Tensor]:
-        # in each training step, `data` is a batch of images:
+        # when invoked via `self.fit`, `data` is a tensor of size: `(batch-size, *image-size)`
+        # (e.g., `(128, 28, 28, 1)`) for a grayscale image of size 28x28
         with tf.GradientTape() as tape:
-            # 1) encode each image (i.e., map each into a mean and a variance)
             z_mean, z_log_var = self.encoder(data)
-            # 2) sample latent vectors from the gaussian distributions
             z = self.sampler((z_mean, z_log_var))
-            # 3) decode back the latent vectors into images
             reconstruction = self.decoder(z)
-            # 4) compute the losses:
-            #    we sum the reconstruction loss over the spatial dimensions and take
-            #    its mean over the batch dimension
+
+            # loss computation:
+            #    1. sum the reconstruction loss over the spatial dimensions and
+            #    take its mean over the batch dimension:
             reconstruction_loss = tf.reduce_mean(
                 tf.reduce_sum(
                     keras.losses.binary_crossentropy(data, reconstruction), axis=(1, 2)
                 )
             )
-            #    add the regularization term (Kullback-Leibler divergence)
+            #    2. add the regularization term (Kullback-Leibler divergence) by summing
+            #    over the latent dimension (-1) and averaging over the batch dimension:
             kl_loss = -0.5 * (1 + z_log_var - tf.square(z_mean) - tf.exp(z_log_var))
-            total_loss = reconstruction_loss + tf.reduce_mean(kl_loss)
+            kl_loss = tf.reduce_mean(tf.reduce_sum(kl_loss, axis=-1))
+            total_loss = reconstruction_loss + kl_loss
 
-            # 5) we update the weights using the gradient and do some bookkeeping to
-            # track the losses of interest
+            # weight updates and metrics bookkeeping
+            # -----------------------------------------------------------------
             grads = tape.gradient(total_loss, self.trainable_weights)
             assert self.optimizer is not None, (
                 "an optimizer needs to be set before training!"
