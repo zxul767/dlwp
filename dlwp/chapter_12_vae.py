@@ -25,6 +25,9 @@ else:
 
 MNIST_DIGIT_SIZE = 28  # each image is 28x28 pixels
 DEFAULT_COLOR_MAP = "Grays_r"
+DEFAULT_LATENT_MEAN = 0.0
+DEFAULT_LATENT_STDDEV = 1.0
+LATENT_GRID_STDDEVS = 2.0
 
 
 def prepare_unlabeled_mnist() -> npt.NDArray[np.float32]:
@@ -204,12 +207,19 @@ class VAE(KerasModel):
             }
 
 
-def plot_latent_mnist_digit(vae: KerasModel, n_latent_dims: int) -> None:
+def plot_latent_mnist_digit(
+    vae: KerasModel,
+    n_latent_dims: int,
+    latent_mean: float = DEFAULT_LATENT_MEAN,
+    latent_stddev: float = DEFAULT_LATENT_STDDEV,
+) -> None:
     """
     Plots a single latent MNIST digit (i.e., a digit image from the VAE's latent space)
     """
     # sample a latent image
-    z_sample = tf.random.normal(shape=(1, n_latent_dims), stddev=2.0)
+    z_sample = tf.random.normal(
+        shape=(1, n_latent_dims), mean=latent_mean, stddev=latent_stddev
+    )
     reconstructed_image = vae.decoder.predict(z_sample, verbose=0)
 
     # Reshape the image for display
@@ -219,7 +229,7 @@ def plot_latent_mnist_digit(vae: KerasModel, n_latent_dims: int) -> None:
     # Display the reconstructed image
     _ = plt.figure(figsize=(5, 5))
     _ = plt.imshow(reconstructed_image, cmap=DEFAULT_COLOR_MAP)
-    _ = plt.title(f"Sampled and Reconstructed Image: {z_sample.numpy()}")
+    _ = plt.title(f"Sampled latent vector: {z_sample[0].numpy()}")
     _ = plt.axis("off")
     plt.show()
 
@@ -227,8 +237,8 @@ def plot_latent_mnist_digit(vae: KerasModel, n_latent_dims: int) -> None:
 def plot_latent_mnist_grid(
     vae: KerasModel,
     grid_size: int = 30,
-    x_range: tuple[float, float] = (-1, 1),
-    y_range: tuple[float, float] = (-1, 1),
+    latent_mean: float = DEFAULT_LATENT_MEAN,
+    latent_stddev: float = DEFAULT_LATENT_STDDEV,
 ) -> None:
     """
     Plots a grid of latent MNIST digits (i.e., digit images from the VAE's latent space).
@@ -239,9 +249,12 @@ def plot_latent_mnist_grid(
     digit_size = MNIST_DIGIT_SIZE
     figure = np.zeros((digit_size * grid_size, digit_size * grid_size))
 
-    # sample points linearly on an 2d grid
-    grid_x = np.linspace(x_range[0], x_range[1], grid_size)
-    grid_y = np.linspace(y_range[0], y_range[1], grid_size)[::-1]
+    # The grid covers the same latent distribution as the random sampler,
+    # spanning two standard deviations around the shared mean.
+    grid_min = latent_mean - LATENT_GRID_STDDEVS * latent_stddev
+    grid_max = latent_mean + LATENT_GRID_STDDEVS * latent_stddev
+    grid_x = np.linspace(grid_min, grid_max, grid_size)
+    grid_y = np.linspace(grid_min, grid_max, grid_size)[::-1]
     for (i, yi), (j, xj) in tqdm.tqdm(
         product(enumerate(grid_y), enumerate(grid_x)), total=grid_size * grid_size
     ):
